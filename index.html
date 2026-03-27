@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPPC Symulator</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; background: #121212; color: #fff; padding: 20px; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); max-width: 400px; margin: auto; }
+        button { width: 100%; padding: 15px; margin: 8px 0; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-conn { background: #007AFF; color: white; }
+        .btn-start { background: #34C759; color: white; font-size: 18px; padding: 20px; margin-top: 20px;}
+        .btn-stop { background: #FF3B30; color: white; }
+        .btn-mode { background: #444; color: white; width: 48%; display: inline-block; }
+        .active-mode { background: #FF9500; }
+        input[type=range] { width: 100%; margin: 15px 0; }
+        .label { display: flex; justify-content: space-between; font-size: 14px; color: #bbb; }
+        .val { color: #00ffcc; font-weight: bold; }
+        hr { border: 0.5px solid #333; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Panel Sterowania</h2>
+        <button class="btn-conn" id="connBtn" onclick="connectBT()">1. POŁĄCZ Z ESP32</button>
+        <hr>
+        
+        <div style="text-align: justify;">
+            <button class="btn-mode active-mode" id="btnTLD" onclick="setMode(0)">Tryb TLD</button>
+            <button class="btn-mode" id="btnOSL" onclick="setMode(1)">Tryb OSL</button>
+        </div>
+        <br>
+
+        <div class="label"><span>Jasność (I0):</span> <span class="val" id="iShow">1023</span></div>
+        <input type="range" min="0" max="1023" value="1023" oninput="updateParam('I', this.value, 'iShow', '')">
+
+        <div class="label"><span>Czas TLD (T_on):</span> <span class="val" id="dShow">500 ms</span></div>
+        <input type="range" min="10" max="2000" step="10" value="500" oninput="updateParam('D', this.value, 'dShow', ' ms')">
+
+        <div class="label"><span>Stała OSL (Tau):</span> <span class="val" id="tShow">1.0 s</span></div>
+        <input type="range" min="0.1" max="10.0" step="0.1" value="1.0" oninput="updateParam('T', this.value, 'tShow', ' s')">
+
+        <button class="btn-start" onclick="send('START')">WYZWÓL BŁYSK</button>
+        <button class="btn-stop" onclick="send('STOP')">ZATRZYMAJ</button>
+    </div>
+
+    <script>
+        let charac;
+        const SERVICE_UUID = "0000180c-0000-1000-8000-00805f9b34fb";
+        const CHAR_UUID = "00002a56-0000-1000-8000-00805f9b34fb";
+
+        async function connectBT() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }]
+                });
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                charac = await service.getCharacteristic(CHAR_UUID);
+                
+                document.getElementById('connBtn').innerText = "POŁĄCZONO";
+                document.getElementById('connBtn').style.background = "#34C759";
+            } catch (e) { alert("Błąd: " + e.message); }
+        }
+
+        function setMode(m) {
+            document.getElementById('btnTLD').classList.remove('active-mode');
+            document.getElementById('btnOSL').classList.remove('active-mode');
+            if(m === 0) {
+                document.getElementById('btnTLD').classList.add('active-mode');
+                send('MOD0');
+            } else {
+                document.getElementById('btnOSL').classList.add('active-mode');
+                send('MOD1');
+            }
+        }
+
+        function updateParam(prefix, val, spanId, unit) {
+            document.getElementById(spanId).innerText = val + unit;
+            send(prefix + val);
+        }
+
+        async function send(msg) {
+            if (!charac) return;
+            const enc = new TextEncoder();
+            await charac.writeValue(enc.encode(msg));
+        }
+    </script>
+</body>
+</html>ncjometrów (100Ω-1MΩ)
