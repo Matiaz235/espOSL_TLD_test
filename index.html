@@ -4,73 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Światło Kalibracji</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; justify-content: center; padding: 20px; }
-        .panel { background: #1a1a1a; padding: 30px; border-radius: 20px; width: 100%; max-width: 480px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.7); }
-        h2 { color: #007AFF; text-align: center; margin-top: 0; }
-        
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; justify-content: center; padding: 20px; }
+        .panel { background: #1a1a1a; padding: 30px; border-radius: 20px; width: 100%; max-width: 480px; border: 1px solid #333; }
+        h2 { color: #007AFF; text-align: center; }
         .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
         #connBtn { background: #007AFF; color: white; }
         #connBtn.connected { background: #1c1c1e; color: #34C759; border: 1px solid #34C759; }
-        
         #mainAction { background: #34C759; color: white; display: none; margin-top: 20px; font-size: 18px; }
         #mainAction.stop { background: #FF3B30; }
-
         .mode-select { display: flex; gap: 5px; margin: 20px 0; background: #222; padding: 5px; border-radius: 10px; }
-        .m-btn { flex: 1; padding: 12px 5px; background: transparent; border: none; color: #888; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .m-btn { flex: 1; padding: 12px 5px; background: transparent; border: none; color: #888; border-radius: 8px; cursor: pointer; }
         .m-btn.active { background: #FF9500; color: white; }
-
         .control-group { margin-bottom: 20px; background: #252525; padding: 15px; border-radius: 10px; }
-        .header { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 5px; }
+        .header { display: flex; justify-content: space-between; font-size: 14px; }
         .val { color: #FF9500; font-weight: bold; }
-        .hint { display: block; font-size: 12px; color: #777; margin-bottom: 10px; }
         input[type=range] { width: 100%; accent-color: #FF9500; cursor: pointer; }
-
-        .toggle-box { background: #252525; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .toggle-box { background: #252525; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <div class="panel">
         <h2>Symulator Luminescencji Dozymetrycznej</h2>
-        <button id="connBtn" class="btn" onclick="connect()">POŁĄCZ Z ESP32 (Bluetooth)</button>
+        <button id="connBtn" class="btn" onclick="connect()">POŁĄCZ BLUETOOTH</button>
 
         <div id="ui" style="display: none;">
-            
             <div class="mode-select">
-                <button id="m0" class="m-btn active" onclick="setMode(0)">TEST (Kwadrat)</button>
-                <button id="m1" class="m-btn" onclick="setMode(1)">TLD (Gauss)</button>
-                <button id="m2" class="m-btn" onclick="setMode(2)">OSL (Zanik)</button>
+                <button id="m0" class="m-btn active" onclick="setMode(0)">TEST</button>
+                <button id="m1" class="m-btn" onclick="setMode(1)">TLD</button>
+                <button id="m2" class="m-btn" onclick="setMode(2)">OSL</button>
             </div>
 
             <div class="control-group">
-                <div class="header"><span>Jasność Szczytowa (I₀)</span> <span class="val" id="iV">1023</span></div>
-                <span class="hint">Maksymalna moc diody w piku emisji.</span>
+                <div class="header"><span>Jasność (I₀)</span> <span class="val" id="iV">1023</span></div>
                 <input type="range" min="0" max="1023" value="1023" oninput="upd('I', this.value, 'iV', '')">
             </div>
 
             <div class="control-group" id="ctrl-ton">
-                <div class="header"><span id="ton-label">Czas trwania (T_on)</span> <span class="val" id="dV">500 ms</span></div>
-                <span class="hint" id="ton-hint">Szerokość fali prostokątnej (sugerowane: 10 - 500 ms).</span>
-                <input type="range" id="ton-slider" min="10" max="20000" step="10" value="500" oninput="upd('D', this.value, 'dV', ' ms')">
+                <div class="header"><span>Czas trwania</span> <span class="val" id="dV">500 ms</span></div>
+                <input type="range" min="10" max="20000" step="10" value="500" oninput="upd('D', this.value, 'dV', ' ms')">
             </div>
 
             <div class="control-group" id="ctrl-tau" style="display: none;">
-                <div class="header"><span>Stała zaniku (τ - Tau)</span> <span class="val" id="tV">1.0 s</span></div>
-                <span class="hint">Czas wygasania luminescencji (sugerowane: 0.2s - 1.5s).</span>
+                <div class="header"><span>Stała zaniku (τ)</span> <span class="val" id="tV">1.0 s</span></div>
                 <input type="range" min="0.1" max="5.0" step="0.1" value="1.0" oninput="upd('T', this.value, 'tV', ' s')">
             </div>
 
             <div class="control-group">
-                <div class="header"><span>Przerwa między błyskami</span> <span class="val" id="gV">1000 ms</span></div>
+                <div class="header"><span>Przerwa (Gap)</span> <span class="val" id="gV">1000 ms</span></div>
                 <input type="range" min="0" max="10000" step="100" value="1000" oninput="upd('G', this.value, 'gV', ' ms')">
             </div>
 
             <div class="toggle-box">
-                <span style="font-weight: bold;">Ciągłe zapętlenie (Loop)</span>
-                <input type="checkbox" id="contCheck" checked onchange="toggleCont()" style="width:22px; height:22px;">
+                <span>Ciągłe zapętlenie</span>
+                <input type="checkbox" id="contCheck" checked onchange="toggleCont()" style="width:20px; height:20px;">
             </div>
 
-            <button id="mainAction" class="btn" onclick="handleAction()">ROZPOCZNIJ SYMULACJĘ</button>
+            <button id="mainAction" class="btn" onclick="handleAction()">ROZPOCZNIJ</button>
         </div>
     </div>
 
@@ -83,71 +74,52 @@
         async function connect() {
             try {
                 const dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [S_UUID] }] });
-                dev.addEventListener('gattserverdisconnected', () => location.reload());
                 const srv = await dev.gatt.connect();
                 const svc = await srv.getPrimaryService(S_UUID);
                 char = await svc.getCharacteristic(C_UUID);
                 
-                document.getElementById('connBtn').innerText = "✓ POŁĄCZONO Z SYSTEMEM";
+                await char.startNotifications();
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    if (new TextDecoder().decode(e.target.value) === "DONE") resetButton();
+                });
+
+                document.getElementById('connBtn').innerText = "✓ POŁĄCZONO";
                 document.getElementById('connBtn').className = "btn connected";
                 document.getElementById('ui').style.display = "block";
                 document.getElementById('mainAction').style.display = "block";
-                setMode(0); // Domyślnie ładuje tryb TEST
-            } catch (e) { alert("Błąd połączenia: " + e.message); }
+                setMode(0);
+            } catch (e) { alert("Błąd: " + e.message); }
         }
 
         function handleAction() {
             isRunning = !isRunning;
+            updateUI();
+            send(isRunning ? "START" : "STOP");
+        }
+
+        function resetButton() {
+            isRunning = false;
+            updateUI();
+        }
+
+        function updateUI() {
             const b = document.getElementById('mainAction');
-            if(isRunning) {
-                b.innerText = "PRZERWIJ SYMULACJĘ"; b.classList.add('stop'); send("START");
-            } else {
-                b.innerText = "ROZPOCZNIJ SYMULACJĘ"; b.classList.remove('stop'); send("STOP");
-            }
+            b.innerText = isRunning ? "PRZERWIJ" : "ROZPOCZNIJ";
+            b.classList.toggle('stop', isRunning);
         }
 
         function setMode(m) {
-            // Aktualizacja przycisków
-            document.getElementById('m0').classList.toggle('active', m==0);
-            document.getElementById('m1').classList.toggle('active', m==1);
-            document.getElementById('m2').classList.toggle('active', m==2);
-            
-            // Logika wyświetlania sekcji
-            const ctrlTon = document.getElementById('ctrl-ton');
-            const ctrlTau = document.getElementById('ctrl-tau');
-            const tonLabel = document.getElementById('ton-label');
-            const tonHint = document.getElementById('ton-hint');
-
-            if (m == 0) {
-                ctrlTon.style.display = "block";
-                ctrlTau.style.display = "none";
-                tonLabel.innerText = "Szerokość impulsu (TEST)";
-                tonHint.innerText = "Czas trwania fali prostokątnej (sugerowane: 10 - 500 ms).";
-            } else if (m == 1) {
-                ctrlTon.style.display = "block";
-                ctrlTau.style.display = "none";
-                tonLabel.innerText = "Szerokość krzywej blasku (TLD)";
-                tonHint.innerText = "Całkowity czas symulacji grzania (sugerowane: 5000 - 15000 ms).";
-            } else if (m == 2) {
-                ctrlTon.style.display = "none";
-                ctrlTau.style.display = "block";
-            }
+            document.querySelectorAll('.m-btn').forEach((b, i) => b.classList.toggle('active', i==m));
+            document.getElementById('ctrl-ton').style.display = (m == 2) ? "none" : "block";
+            document.getElementById('ctrl-tau').style.display = (m == 2) ? "block" : "none";
             send("MOD" + m);
         }
 
-        function toggleCont() {
-            const isC = document.getElementById('contCheck').checked;
-            send(isC ? "CONT_ON" : "CONT_OFF");
-        }
+        function toggleCont() { send(document.getElementById('contCheck').checked ? "CONT_ON" : "CONT_OFF"); }
+        function upd(p, v, id, u) { document.getElementById(id).innerText = v + u; send(p + v); }
+        async function send(m) { if (char) await char.writeValue(new TextEncoder().encode(m)); }
 
-        function upd(p, v, id, u) {
-            document.getElementById(id).innerText = v + u;
-            send(p + v);
-        }
-
-        async function send(m) {
-            if (char) await char.writeValue(new TextEncoder().encode(m));
-        }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
 </body>
 </html>
